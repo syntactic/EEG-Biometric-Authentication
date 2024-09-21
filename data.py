@@ -22,6 +22,24 @@ def parse_filename(filename):
     groupdict['experiment'] = int(groupdict['experiment'][2:])
     return groupdict
 
+def create_rawarray_dict_from_df_dict(df_dict):
+    rawarray_dict = {}
+    for subject in df_dict:
+        rawarray_dict[subject] = {}
+        for experiment in df_dict[subject]:
+            experiment_data = df_dict[subject][experiment]
+            if isinstance(experiment_data, list):
+                rawarray_dict[subject][experiment] = []
+                for session in experiment_data:
+                    info = mne.create_info(ch_names=ELECTRODES, sfreq = SFREQ, ch_types='eeg')
+                    raw = mne.io.RawArray(session.T, info, verbose=False)
+                    rawarray_dict[subject][experiment].append(raw)
+            else:
+                info = mne.create_info(ch_names=ELECTRODES, sfreq = SFREQ, ch_types='eeg')
+                raw = mne.io.RawArray(experiment_data.T, info, verbose=False)
+                rawarray_dict[subject][experiment] = raw
+    return rawarray_dict
+
 def load_data(data_path: str = DATA_PATH, subfolder: str = 'Segmented_Data'):
     specific_data_path = os.path.join(data_path, subfolder)
     data = {}
