@@ -2,6 +2,7 @@ import os, re
 import pandas as pd
 import mne
 import logging
+import torch as th
 
 logger = logging.getLogger('DecodingNeuronalActivityProject.Data')
 
@@ -10,6 +11,27 @@ DATA_PATH = "auditory-evoked-potential-eeg-biometric-dataset-1.0.0"
 ELECTRODES = ["T7", "F8", "Cz", "P4"]
 SECONDS_FOR_DATA_TYPE = {"Segmented_Data": 120, "Filtered_Data": 120}
 SFREQ = 200
+
+
+def split_dataset(data, split_ratio=0.8):
+    split = int(len(data) * split_ratio)
+    train_dataset, test_dataset = th.utils.data.random_split(data, [split, len(data) - split])
+    return train_dataset, test_dataset
+
+class EEGDataset(th.utils.data.Dataset):
+    def __init__(self, extracted_features_dict):
+        self.labels = []
+        self.features = []
+        for subject in extracted_features_dict:
+            for epoch_features in extracted_features_dict[subject]:
+                self.labels.append(subject-1) # Subjects are 1-indexed
+                self.features.append(th.tensor(epoch_features))
+        
+    def __len__(self):
+        return len(self.labels)
+    
+    def __getitem__(self, idx):
+        return self.features[idx], self.labels[idx]
 
 def parse_filename(filename):
     match = filename_scheme_re.match(filename)
