@@ -3,7 +3,7 @@ import torch as th
 if th.backends.mps.is_available():
     device = th.device("mps")
 
-def train_and_test_model(model, train_loader, test_loader, optimizer, criterion, epochs=500):
+def train_and_test_model(model, train_loader, test_loader, optimizer, criterion, epochs=500, verbose=True):
     training_losses = []
     testing_losses = []
     testing_accuracies = []
@@ -19,15 +19,15 @@ def train_and_test_model(model, train_loader, test_loader, optimizer, criterion,
             epoch_loss += loss.item()
             loss.backward()
             optimizer.step()
-            if i % 100 == 0:
+            if verbose and i % 100 == 0:
                 print(f'Epoch: {epoch}, Loss: {loss.item()}')
         training_losses.append(epoch_loss/len(train_loader))
-        test_loss, accuracy = test_model(model, test_loader, criterion)
+        test_loss, accuracy = test_model(model, test_loader, criterion, verbose)
         testing_losses.append(test_loss)
         testing_accuracies.append(accuracy)
     return training_losses, testing_losses, testing_accuracies
 
-def test_model(model, test_loader, criterion):
+def test_model(model, test_loader, criterion, verbose=True):
     model.eval()
     correct = 0
     total = 0
@@ -43,5 +43,6 @@ def test_model(model, test_loader, criterion):
             correct += (predicted == y).sum().item()
         test_loss /= len(test_loader)
     accuracy = correct / total
-    print(f'Accuracy: {100 * accuracy}')
+    if verbose:
+        print(f'Accuracy: {100 * accuracy}')
     return test_loss, accuracy
