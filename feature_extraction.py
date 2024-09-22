@@ -32,6 +32,9 @@ def extract_features_from_epoch(epoch, sampling_rate=200):
     flattened_std_psd_bands = np.array([std_psd_bands[band] for band in std_psd_bands]).flatten()
     features.extend(flattened_std_psd_bands)
 
+    katz_fd = compute_katz_fd_from_epoch(epoch)
+    features.extend(katz_fd)
+
     return features
 
 def create_dataset_from_epoched_experiment_data_dict(epoched_experiment_data_dict, sampling_rate=200):
@@ -83,3 +86,30 @@ def compute_amplitude_kurtosis(epoch):
         kurt = scipy.stats.kurtosis(channel_data, fisher=True, bias=False)
         kurtosis_values.append(kurt)
     return np.array(kurtosis_values)  # Shape: (channels,)
+
+def katz_fractal_dimension(signal):
+    N = len(signal)  # Number of points in the time series
+
+    # Calculate the distance between successive points
+    diff = np.diff(signal)
+    L = np.sum(np.abs(diff))  # Total length of the signal path
+
+    # Calculate the maximum distance (diameter) between first point and any other point
+    d = np.max(np.abs(signal - signal[0]))
+
+    # Avoid division by zero
+    if L == 0 or d == 0:
+        return 0
+
+    # Compute the Katz Fractal Dimension
+    D = np.log10(N) / (np.log10(d / L) + np.log10(N))
+    return D
+
+def compute_katz_fd_from_epoch(epoch):
+    # epoch: array of shape (samples_per_epoch, channels)
+    katz_fd_values = []
+    for ch in epoch.columns:
+        channel_data = epoch[ch].values
+        fd = katz_fractal_dimension(channel_data)
+        katz_fd_values.append(fd)
+    return katz_fd_values  # Shape: (channels,)
